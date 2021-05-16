@@ -1,0 +1,432 @@
+---
+title: "Final Exam"
+author: "Euclid Zhang"
+date: "5/2/2021"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+**Problem 1.**
+   
+**Using R, generate a random variable X that has 10,000 random uniform numbers from 1 to N, where N can be any number of your choosing greater than or equal to 6.  Then generate a random variable Y that has 10,000 random normal numbers with a mean of **$\mu=\sigma=(N+1)/2$   
+   
+```{r}
+set.seed(605)
+N <- 10
+n <- 10000
+mu <- (N + 1)/2
+sigma <- (N + 1)/2
+
+X <- runif(n, 1, N)
+Y <- rnorm(n, mu, sigma)
+```
+ 
+ 
+_Probability_.   Calculate as a minimum the below probabilities a through c.  Assume the small letter "x" is estimated as the median of the X variable, and the small letter "y" is estimated as the 1st quartile of the Y variable.  Interpret the meaning of all probabilities.
+    
+```{r}
+x <- median(X, 0.5)
+y <- quantile(Y, 0.25)
+```
+
+a. $P(X>x|X>y)$
+$P(X>x|X>y) = P(X>x\;\;and\;\;X>y)/P(X>y)$   
+Given X > y, the probability that X>y and X>x is
+```{r}
+sum(X>y & X>x)/sum(X>y)
+```
+
+   
+b. $P(X>x,Y>y)$  
+The probability that X>x and Y>y is
+```{r}
+sum(X>x & Y>y)/length(X)
+```
+   
+c $P(X<x|X>y)$  
+Given X > y, the probability that X>y and X<x is
+```{r}
+sum(X>y & X<x)/sum(X>y)
+```
+   
+   
+-------------------------------------------------------------------     
+   
+   
+Investigate whether $P(X>x\;and\;Y>y)=$ P(X>x)*P(Y>y) by building a table and evaluating the marginal and joint probabilities   
+   
+```{r}
+table_num <- matrix(
+    c(
+    sum(X>x & Y>y),
+    sum(X<=x & Y>y),
+    sum(Y > y),
+    sum(X>x & Y<=y),
+    sum(X<=x & Y<=y),
+    sum(Y <= y),
+    sum(X > x),
+    sum(X <= x),
+    length(X)
+    ), nrow = 3, ncol = 3, byrow = TRUE,
+    dimnames = list(c('Y > y','not Y > y', 'Total'), c('X > x','not X > x', 'Total'))
+)
+table_num
+```
+
+```{r}
+table_prob  <- table_num/length(X)
+table_prob
+```
+So $P(X > x)*P(Y > y) =$
+```{r}
+0.75*0.5
+```
+Which is very close to $P(X>x\;and\;Y>y)$. It seems that they are theoretically equal.   
+   
+-------------------------------------------------------------------   
+      
+Check to see if independence holds by using Fisher’s Exact Test and the Chi Square Test.  What is the difference between the two? Which is most appropriate?   
+   
+   
+   
+```{r}
+fisher.test(table_num[1:2,1:2])
+```
+```{r}
+chisq.test(table_num[1:2,1:2])
+```
+Both Fisher’s Exact Test and the Chi Square Test give about the same small p-value. We reject the null hypothesis that the two events are dependent. Chi Square Test requires a large sample size while Fisher’s Exact Test works for small sample size. The accuracy for Chi Square Test is an approximate and the accuracy for Fisher’s Exact Test is exact. Therefor, Fisher’s Exact Test is more appropriate in this case. However, the test results are nearly the same.   
+   
+-------------------------------------------------------------------      
+   
+**Problem 2**   
+   
+   
+_Descriptive and Inferential Statistics_. Provide univariate descriptive statistics and appropriate plots for the training data set.  Provide a scatterplot matrix for at least two of the independent variables and the dependent variable. Derive a correlation matrix for any three quantitative variables in the dataset.  Test the hypotheses that the correlations between each pairwise set of variables is 0 and provide an 80% confidence interval.  Discuss the meaning of your analysis.  Would you be worried about familywise error? Why or why not?    
+
+
+```{r}
+train <- read.csv("https://raw.githubusercontent.com/ezaccountz/datasets/main/train.csv")
+test <- read.csv("https://raw.githubusercontent.com/ezaccountz/datasets/main/test.csv")
+```
+**Variable descriptions**:
+    
+* MSSubClass: Identifies the type of dwelling involved in the sale
+* MSZoning: Identifies the general zoning classification of the sale
+* LotFrontage: Linear feet of street connected to property
+* LotArea: Lot size in square feet
+* Street: Type of road access to property
+* Alley: Type of alley access to property
+* LotShape: General shape of property
+* LandContour: Flatness of the property
+* Utilities: Type of utilities available
+* LotConfig: Lot configuration
+* LandSlope: Slope of property
+* Neighborhood: Physical locations within Ames city limits
+* Condition1: Proximity to various conditions
+* Condition2: Proximity to various conditions (if more than one is present)
+* BldgType: Type of dwelling
+* HouseStyle: Style of dwelling
+* OverallQual: Rates the overall material and finish of the house
+* OverallCond: Rates the overall condition of the house
+* YearBuilt: Original construction date
+* YearRemodAdd: Remodel date (same as construction date if no remodeling or additions)
+* RoofStyle: Type of roof
+* RoofMatl: Roof material
+* Exterior1st: Exterior covering on house
+* Exterior2nd: Exterior covering on house (if more than one material)
+* MasVnrType: Masonry veneer type
+* MasVnrArea: Masonry veneer area in square feet
+* ExterQual: Evaluates the quality of the material on the exterior 
+* ExterCond: Evaluates the present condition of the material on the exterior
+* Foundation: Type of foundation
+* BsmtQual: Evaluates the height of the basement
+* BsmtCond: Evaluates the general condition of the basement
+* BsmtExposure: Refers to walkout or garden level walls
+* BsmtFinType1: Rating of basement finished area
+* BsmtFinSF1: Type 1 finished square feet
+* BsmtFinType2: Rating of basement finished area (if multiple types)
+* BsmtFinSF2: Type 2 finished square feet
+* BsmtUnfSF: Unfinished square feet of basement area
+* TotalBsmtSF: Total square feet of basement area
+* Heating: Type of heating
+* HeatingQC: Heating quality and condition
+* CentralAir: Central air conditioning
+* Electrical: Electrical system
+* 1stFlrSF: First Floor square feet
+* 2ndFlrSF: Second floor square feet
+* LowQualFinSF: Low quality finished square feet (all floors)
+* GrLivArea: Above grade (ground) living area square feet
+* BsmtFullBath: Basement full bathrooms
+* BsmtHalfBath: Basement half bathrooms
+* FullBath: Full bathrooms above grade
+* HalfBath: Half baths above grade
+* BedroomAbvGr: Bedrooms above grade (does NOT include basement bedrooms)
+* KitchenbvGr: Kitchens above grade
+* KitchenQual: Kitchen quality
+* TotRmsAbvGrd: Total rooms above grade (does not include bathrooms)
+* Functional: Home functionality (Assume typical unless deductions are warranted)
+* Fireplaces: Number of fireplaces
+* GarageType: Garage location
+* GarageYrBlt: Year garage was built
+* GarageFinish: Interior finish of the garage
+* GarageCars: Size of garage in car capacity
+* GarageArea: Size of garage in square feet
+* GarageQual: Garage quality
+* GarageCond: Garage condition
+* PavedDrive: Paved driveway
+* WoodDeckSF: Wood deck area in square feet
+* OpenPorchSF: Open porch area in square feet
+* EnclosedPorch: Enclosed porch area in square feet
+* 3SsnPorch: Three season porch area in square feet
+* ScreenPorch: Screen porch area in square feet
+* PoolArea: Pool area in square feet
+* PoolQC: Pool quality
+* Fence: Fence quality
+* MiscFeature: Miscellaneous feature not covered in other categories
+* MiscVal: $Value of miscellaneous feature
+* MoSold: Month Sold (MM)
+* YrSold: Year Sold (YYYY)
+* SaleType: Type of sale
+* SaleCondition: Condition of sale
+   
+**Variable summary**:   
+```{r}
+summary(train)
+```
+**plot of some key variables**
+
+```{r}
+par(mfrow=c(3,2))
+hist(train$GrLivArea)
+hist(train$GarageArea)
+hist(train$SalePrice)
+hist(train$BedroomAbvGr)
+plot(train$Neighborhood)
+plot(train$SaleType)
+par(mfrow=c(1,1))
+```
+
+
+**scatterplot matrix**
+```{r}
+train_select <- train[,c("GrLivArea","GarageArea","SalePrice")]
+```
+```{r}
+pairs(train_select)
+```
+
+**correlation matrix**
+```{r}
+cor_matrix <- cor(train_select)
+cor_matrix
+```
+
+```{r}
+cor.test(train_select$GrLivArea, train_select$GarageArea, conf.level = 0.8)
+```
+```{r}
+cor.test(train_select$GrLivArea, train_select$SalePrice, conf.level = 0.8)
+```
+```{r}
+cor.test(train_select$GarageArea, train_select$SalePrice, conf.level = 0.8)
+```
+The result of the tests show that there is a strong correlation between GrLivArea/GarageArea and SalePrice. The p-values are nearly 0. It means we can compare the price of different houses using the their GrLivArea and GarageArea. By doing so, when comparing two houses with similar condition, quality and features, the probability of making familywise error is extremely low.
+   
+-------------------------------------------------------------------      
+      
+_Linear Algebra and Correlation_.  Invert your correlation matrix from above. (This is known as the precision matrix and contains variance inflation factors on the diagonal.) Multiply the correlation matrix by the precision matrix, and then multiply the precision matrix by the correlation matrix. Conduct LU decomposition on the matrix.     
+```{r}
+inv_matrix = solve(cor_matrix)
+inv_matrix
+```
+```{r}
+round(cor_matrix %*% inv_matrix,6)
+```
+```{r}
+round(inv_matrix %*% cor_matrix,6)
+```
+```{r message=FALSE, warning=FALSE}
+if(!require(matrixcalc)){
+    install.packages("matrixcalc")
+}
+library(matrixcalc)
+
+
+lu.decomposition(inv_matrix)
+```
+   
+-------------------------------------------------------------------         
+   
+_Calculus-Based Probability & Statistics_.  Many times, it makes sense to fit a closed form distribution to data.  Select a variable in the Kaggle.com training dataset that is skewed to the right, shift it so that the minimum value is absolutely above zero if necessary.  Then load the MASS package and run fitdistr to fit an exponential probability density function.  (See https://stat.ethz.ch/R-manual/R-devel/library/MASS/html/fitdistr.html ).  Find the optimal value of $\lambda$ for this distribution, and then take 1000 samples from this exponential distribution using this value (e.g., rexp(1000, $\lambda$)).  Plot a histogram and compare it with a histogram of your original variable.   Using the exponential pdf, find the 5th and 95th percentiles using the cumulative distribution function (CDF).   Also generate a 95% confidence interval from the empirical data, assuming normality.  Finally, provide the empirical 5th percentile and 95th percentile of the data.  Discuss.
+
+```{r message=FALSE, warning=FALSE}
+if(!require(MASS)){
+    install.packages("MASS")
+}
+if(!require(MASS)){
+    install.packages("Rmisc")
+}
+library(MASS)
+library("Rmisc")
+```
+Select variable GrLivArea
+```{r}
+hist(train_select$GrLivArea)
+```
+optimal value of $\lambda$
+```{r}
+mlh <- fitdistr(train_select$GrLivArea, densfun="exponential")
+lambda = mlh$estimate
+lambda
+```
+
+```{r}
+par(mfrow=c(1,2)) 
+hist(rexp(1000, lambda), main="optimal")
+hist(train_select$GrLivArea,main="Original")
+```
+      
+5th percentile using the CDF of an exponential distribution
+```{r}
+qexp(0.05, rate = lambda)
+```
+  
+95th percentile using the CDF of an exponential distribution
+```{r}
+qexp(0.95, rate = lambda)
+```
+   
+95% confidence interval from the empirical data   
+```{r message=FALSE, warning=FALSE}
+if(!require(Rmisc)){
+    install.packages("Rmisc")
+}
+library(Rmisc)
+
+CI(train_select$GrLivArea, ci = 0.95)
+```
+empirical 5th percentile and 95th percentile of the data
+
+```{r}
+quantile(train_select$GrLivArea, 0.05)
+```
+```{r}
+quantile(train_select$GrLivArea, 0.95)
+```
+The result shows that the empirical data doesn't fit to an exponential distribution. The exponential distribution pdf is a monotonic decreasing function and the data is increasing and then decreasing. We should select a different distribution that fits the data.
+   
+-------------------------------------------------------------------         
+   
+_Modeling_.  Build some type of multiple regression  model and submit your model to the competition board.  Provide your complete model summary and results with analysis.  Report your Kaggle.com user name and score.   
+    
+    
+Feature Selection:
+   
+First, let's check the missing values of our data
+```{r}
+colSums(is.na(train))[apply(train, 2, function(x) any(is.na(x)))]
+```
+
+```{r}
+colSums(is.na(test))[apply(test, 2, function(x) any(is.na(x)))]
+```
+Variables with considerable number of NA values are **LotFrontage, Alley, MasVnrType, MasVnrArea, BsmtQual, BsmtCond, BsmtExposure, BsmtFinType1, BsmtFinType2, FireplaceQu, GarageType, GarageYrBlt, GarageFinish, GarageQual, GarageCond, PoolQC, Fence, MiscFeature** As they can not be applied generally to every house, we would exclude these variables in our analysis. In fact, some of the variables are correlated with some other variables that may be included in our model. 
+   
+   
+In order to reduce the complexity of our model, we would exclude from our analysis the following types of variables:   
+   
+* 1.variables found above with missing values, which can not be applied generally to every house.
+* 2.variables that describe the quality/condition of a particular part of the house, such as **ExterQual** and **RoofMatl**. we would include **OverallQual** and **OverallCond** in our analysis which describe the overall quality/condition of the house
+* 3.some features that are not considered as import factors that affect the price of a house. For example, **LotShape** and **LandContour**
+   
+   
+we would focus on the following variables:
+
+* **GrLivArea, GarageArea, TotalBsmtSF, LotArea**: key factor listed on house sales
+* **FullBath, HalfBath, BedroomAbvGr**: key factor listed on house sales
+* **MSZoning, Neighborhood**: location of the house, which is an important factor for home buyers
+* **OverallQual, OverallCond**: overall quality/condition of the house, variables that measure the quality/condition of a part of the house can be excluded since they are correlated
+* **SaleType, SaleCondition**: how the house is sold may impact the price of the house
+* **Heating, CentralAir, Electrical**: utilities are crucial for the people living in the house
+* **MiscVal**: variable that captures the value of miscellaneous features
+   
+We start building our model with all selected variables:   
+```{r}
+reg = lm(SalePrice ~ GrLivArea + GarageArea + TotalBsmtSF + LotArea + FullBath 
+         + HalfBath + BedroomAbvGr + MSZoning + Neighborhood + OverallQual 
+         + OverallCond + SaleType + SaleCondition + Heating + CentralAir 
+         + Electrical + MiscVal,  data = train)
+summary(reg)
+```
+
+We then improve our model using backward elimination. Then final result is following:
+```{r}
+reg = lm(SalePrice ~ GrLivArea + GarageArea + TotalBsmtSF + LotArea + BedroomAbvGr 
+         + Neighborhood + OverallQual + OverallCond + SaleType,  data = train)
+summary(reg)
+```
+
+Let's check the normality of the residuals of the final model
+```{r}
+hist(reg$residuals, breaks = 50)
+```
+
+```{r}
+plot(fitted(reg),resid(reg))
+```
+
+```{r}
+qqnorm(resid(reg))
+qqline(resid(reg))
+```
+
+The distribution of the residuals is approximately normal. It's appropriate to predit the sale price using our model.
+
+    
+Now let's do our prediction using the test data. As we found above, there are some missing data in **MSZoning, SaleType, GarageArea** and **TotalBsmtSF**. We are going to replace the NA of the categorical variables by their modes and replace the NA of the numeric variables by 0.     
+```{r}
+Mode <- function(x, na.rm = FALSE) {
+  if(na.rm){
+    x = x[!is.na(x)]
+  }
+
+  ux <- unique(x)
+  return(ux[which.max(tabulate(match(x, ux)))])
+}
+```
+```{r}
+test_modified <- test
+test_modified$MSZoning[is.na(test_modified$MSZoning)] <- Mode(test_modified$MSZoning)
+test_modified$SaleType[is.na(test_modified$SaleType)] <- Mode(test_modified$SaleType)
+test_modified$GarageArea[is.na(test_modified$GarageArea)] <- 0
+test_modified$TotalBsmtSF[is.na(test_modified$TotalBsmtSF)] <- 0
+```
+
+Predict the sale price
+```{r}
+pred <- predict(reg, test_modified)
+```
+   
+Save the result in a csv file for submission   
+```{r eval=FALSE, include=TRUE}
+result <- data.frame(Id = test$Id, SalePrice = pred)
+write.csv(result,"result.csv", row.names = FALSE)
+```
+
+Final result of the submission
+
+user name: euclidzhang   
+score: 0.20894
+
+
+
+
+
+
+
